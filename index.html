@@ -189,92 +189,33 @@
                 const url = `${server.replace(/\/$/, '')}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
                 console.log('Login URL:', url);
 
-                let response;
-                let responseData = null;
+                // Usa proxy Vercel per evitare CORS
+                const vercelProxyUrl = `https://xbox-iptv-web.vercel.app/api/xtream?url=${encodeURIComponent(url)}`;
+                console.log('Vercel Proxy URL:', vercelProxyUrl);
                 
-                try {
-                    // Prova 1: fetch diretto
-                    console.log('Provo fetch diretto...');
-                    response = await fetch(url, {
-                        method: 'GET',
-                        headers: { 'Accept': 'application/json' }
-                    });
-                    
-                    console.log('Response status diretto:', response.status);
-                    
-                    // Leggi il testo prima di parare
-                    const text = await response.text();
-                    console.log('Response text:', text);
-                    
-                    try {
-                        responseData = JSON.parse(text);
-                        console.log('Parsed JSON:', responseData);
-                    } catch(parseErr) {
-                        console.error('Errore JSON parse:', parseErr);
-                        responseData = { user_info: { auth: 0, message: 'Formato risposta errato' } };
-                    }
-                    
-                } catch(corsErr) {
-                    console.log('CORS bloccato, provo proxy...', corsErr);
-                    
-                    // Prova 2: corsproxy.io
-                    try {
-                        const proxyUrl1 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                        console.log('Proxy 1:', proxyUrl1);
-                        response = await fetch(proxyUrl1);
-                        
-                        const text = await response.text();
-                        console.log('Proxy 1 Response:', text);
-                        
-                        try {
-                            responseData = JSON.parse(text);
-                        } catch(parseErr) {
-                            console.error('Proxy 1 JSON errato:', parseErr);
-                            responseData = { user_info: { auth: 0, message: 'Proxy 1 formato errato' } };
-                        }
-                        
-                    } catch(err1) {
-                        console.error('Proxy 1 fallito:', err1);
-                        
-                        // Prova 3: allorigins
-                        try {
-                            const proxyUrl2 = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-                            response = await fetch(proxyUrl2);
-                            const proxyData = await response.json();
-                            
-                            try {
-                                responseData = JSON.parse(proxyData.contents);
-                                console.log('Proxy 2 success:', responseData);
-                            } catch(parseErr) {
-                                responseData = { user_info: { auth: 0, message: 'Proxy 2 formato errato' } };
-                            }
-                            
-                        } catch(err2) {
-                            console.error('Tutti i proxy falliti:', err2);
-                            responseData = { user_info: { auth: 0, message: 'Connessione fallita: ' + err2.message } };
-                        }
-                    }
-                }
+                const response = await fetch(vercelProxyUrl);
+                console.log('Response status:', response.status);
                 
-                console.log('=== DATA FINALE ===', responseData);
+                const data = await response.json();
+                console.log('Response data:', data);
 
-                if (responseData && responseData.user_info) {
-                    console.log('User info:', responseData.user_info);
-                    console.log('Auth value:', responseData.user_info.auth);
+                if (data && data.user_info) {
+                    console.log('User info:', data.user_info);
+                    console.log('Auth value:', data.user_info.auth);
                     
-                    if (responseData.user_info.auth === 1) {
+                    if (data.user_info.auth === 1) {
                         state.auth = { serverUrl: server, username, password };
                         localStorage.setItem('auth', JSON.stringify(state.auth));
                         console.log('Login riuscito!');
                         loadChannels();
                     } else {
-                        const errorMsg = responseData.user_info.message || 'Errore sconosciuto';
+                        const errorMsg = data.user_info.message || 'Errore sconosciuto';
                         console.error('Auth fallito:', errorMsg);
                         alert('Login fallito: ' + errorMsg + '\n\nVerifica:\n1. Server corretto\n2. Username/Password\n3. Account attivo');
                     }
                 } else {
-                    console.error('Struttura risposta errata:', responseData);
-                    alert('Server risposto ma formato errato!\n\nRicevuto: ' + JSON.stringify(responseData).substring(0, 100));
+                    console.error('Struttura risposta errata:', data);
+                    alert('Server risposto ma formato errato!\n\nRisultato: ' + JSON.stringify(data).substring(0, 100));
                 }
             } catch (err) {
                 console.error('Errore Login:', err);
