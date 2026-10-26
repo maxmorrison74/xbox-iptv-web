@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>IPTV Smarters Xbox</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: sans-serif; background: #1a1a2e; color: white; }
+        .app { max-width: 600px; margin: 50px auto; padding: 20px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; font-size: 16px; }
+        button { padding: 15px; font-size: 18px; background: #667eea; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+<div id="app">Test: App caricata!</div>
+<script>
+    // Log per debug
+    console.log('App loaded at:', Date.now());
+    document.getElementById('app').innerHTML = '<h3>Test: App carica!</h3><p>URL: ' + window.location.href + '</p>';
+</script>
+</body>
+</html>
