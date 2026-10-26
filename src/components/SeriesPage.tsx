@@ -181,7 +181,7 @@ const SeriesPage: React.FC = () => {
                     <div>
                       <h3 className="text-xl font-semibold mb-4">Episodi</h3>
                       <div className="max-h-96 overflow-y-auto space-y-2">
-                        {selectedSeries.seasons[selectedSeason].episodes.map(ep => (
+                        {selectedSeries.seasons[selectedSeason]?.episodes.map(ep => (
                           <div
                             key={ep.id}
                             className={`p-4 rounded-lg cursor-pointer transition-all ${

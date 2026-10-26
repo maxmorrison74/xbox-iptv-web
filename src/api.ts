@@ -131,3 +131,5 @@ export class XtreamApiService {
     return `${this.auth.serverUrl.replace(/\/$/, '')}/series/${this.auth.username}/${this.auth.password}/${streamId}/${seasonNum}.mp4`;
   }
 }
+
+export default XtreamApiService;

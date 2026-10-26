@@ -18,7 +18,7 @@ const VodPage: React.FC = () => {
   useEffect(() => {
     if (selectedCategory) {
       const filtered = vodItems.filter(v => v.category_id === selectedCategory);
-      setVodItemsFromCategory(filtered);
+      setVodItems(filtered);
     } else {
       const filtered = vodItems.filter(v => !selectedCategory || v.category_id === selectedCategory);
       setVodItems(filtered);

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Hls from 'hls.js';
 import XtreamApiService from '../api';
-import { LiveChannel, Category, EpgProgramme } from '../types';
+import { LiveChannel, Category } from '../types';
 
 const LivePage: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const api = React.useRef(XtreamApiService.getInstance());
@@ -11,7 +10,6 @@ const LivePage: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [filteredChannels, setFilteredChannels] = useState<LiveChannel[]>([]);
-  const videoRef = React.useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     loadData();
@@ -51,13 +49,6 @@ const LivePage: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const playChannelInApp = (channel: LiveChannel) => {
     const url = api.current.getStreamUrl(channel.stream_id);
     window.location.href = `/player?url=${encodeURIComponent(url)}&title=${encodeURIComponent(channel.name)}`;
-  };
-
-  // Carica EPG per canali selezionati
-  const loadEPG = async () => {
-    if (!channel || !channel.epg_channel_id) return;
-    const epg = await api.current.getShortEpg([channel.epg_channel_id]);
-    console.log('EPG:', epg[channel.epg_channel_id]);
   };
 
   return (

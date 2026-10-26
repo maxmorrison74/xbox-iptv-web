@@ -16,7 +16,6 @@ const PlayerPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
-        lowBufferWatchdogPeriod: 0,
         capLevelToPlayerSize: true,
       });
 
@@ -28,7 +27,7 @@ const PlayerPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         console.log('Stream caricato con HLS.js');
       });
 
-      hls.on(Hls.Events.ERROR, (event, data) => {
+      hls.on(Hls.Events.ERROR, (data) => {
         console.error('Errore HLS:', data);
       });
 
