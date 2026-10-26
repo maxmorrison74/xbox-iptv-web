@@ -22,9 +22,11 @@
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.2s;
+            min-width: 150px;
         }
         .btn:hover { transform: scale(1.05); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-red { background: #dc2626; }
         .input-group { margin-bottom: 20px; }
         .input-group label { display: block; margin-bottom: 8px; font-weight: 600; }
         .input-group input {
@@ -36,50 +38,29 @@
             color: white;
             font-size: 16px;
         }
-        .input-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+        .input-group input:focus { outline: none; border-color: #667eea; }
         .login-box {
             max-width: 500px;
-            margin: 50px auto;
+            margin: 0 auto;
             padding: 40px;
             background: rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             border: 1px solid rgba(255,255,255,0.2);
         }
-        .error {
-            background: rgba(255,0,0,0.2);
-            border: 1px solid rgba(255,0,0,0.5);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        .nav {
-            background: rgba(0,0,0,0.3);
-            padding: 15px;
-            margin: 20px;
-            border-radius: 10px;
-        }
-        .nav button {
-            background: transparent;
-            border: 2px solid rgba(255,255,255,0.2);
-            color: white;
-            padding: 10px 20px;
-            margin-right: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .nav button.active {
-            background: #667eea;
-            border-color: #667eea;
+        .center-vertical {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
         }
         .channel-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 20px;
             padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
         .channel-card {
             background: rgba(255,255,255,0.1);
@@ -89,23 +70,26 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-        .channel-card:hover {
-            background: rgba(102,126,234,0.3);
-            transform: scale(1.05);
-        }
+        .channel-card:hover { background: rgba(102,126,234,0.3); transform: scale(1.05); }
         .channel-icon {
             width: 100%;
-            height: 100px;
+            max-height: 100px;
             object-fit: contain;
             background: rgba(0,0,0,0.2);
             border-radius: 10px;
             margin-bottom: 15px;
         }
-        .loading {
-            text-align: center;
-            padding: 50px;
-            font-size: 24px;
+        .nav-bar {
+            background: rgba(0,0,0,0.3);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
+        .info-text { color: #aaa; font-size: 14px; }
+        .error-text { color: #ef4444; background: rgba(239,68,68,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px; }
         .spinner {
             border: 4px solid rgba(255,255,255,0.1);
             border-top: 4px solid #667eea;
@@ -113,244 +97,208 @@
             width: 50px;
             height: 50px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 40px auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .hide { display: none !important; }
-        .error-log {
-            background: #111;
-            color: #f00;
-            padding: 20px;
-            font-family: monospace;
-            margin: 20px;
-            border-radius: 10px;
-        }
     </style>
 </head>
 <body>
     <div id="app"></div>
     <script>
-        // Gestione errori globali
-        window.onerror = function(msg, url, line) {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="error-log">
-                    <h2>❌ ERRORE CRITICO</h2>
-                    <p>Messaggio: ${msg}</p>
-                    <p>File: ${url}</p>
-                    <p>Linea: ${line}</p>
-                    <p><a href="https://github.com/maxmorrison74/xbox-iptv-web/issues" 
-                        target="_blank">Segnala su GitHub</a></p>
-                </div>
-            `;
+        // Log di debug
+        console.log('=== APP START ===');
+        console.log('URL:', window.location.href);
+        console.log('User Agent:', navigator.userAgent);
+
+        let state = {
+            auth: null,
+            channels: [],
+            loading: true
         };
 
-        // Log debug
-        console.log('App avviata...');
-        console.log('Document readyState:', document.readyState);
-        console.log('URL:', window.location.href);
-        
-        // App logica
-        let state = {
-            user: null,
-            auth: JSON.parse(localStorage.getItem('xtream_auth') || 'null') || {
+        // Carica auth salvata
+        try {
+            const saved = localStorage.getItem('auth');
+            if (saved) {
+                state.auth = JSON.parse(saved);
+            }
+        } catch(e) {
+            console.log('Nessuna auth salvata');
+        }
+
+        // Default credentials
+        if (!state.auth) {
+            state.auth = {
                 serverUrl: 'http://ngueyepdn.xxczsmart.com',
                 username: 'M99SVERR',
                 password: 'JJAJXT7V'
-            },
-            channels: [],
-            categories: [],
-            loading: true,
-            error: null,
-            page: 'login'
-        };
-
-        function render() {
-            const app = document.getElementById('app');
-            
-            console.log('Rendering page:', state.page);
-            
-            if (state.page === 'login') {
-                renderLogin();
-            } else if (state.page === 'channels') {
-                renderChannels();
-            } else if (state.page === 'loading') {
-                app.innerHTML = `<div class="loading"><div class="spinner"></div><p>Caricamento...</p></div>`;
-            } else {
-                app.innerHTML = `<h1>Pagina non trovata</h1>`;
-            }
-        }
-
-        function renderLogin() {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="login-box">
-                    <h1 style="text-align:center;margin-bottom:30px;font-size:32px;">
-                        📺 IPTV Smarters Xbox
-                    </h1>
-                    ${state.error ? `<div class="error">${state.error}</div>` : ''}
-                    <div class="input-group">
-                        <label>URL Server</label>
-                        <input type="text" id="server" value="${state.auth.serverUrl}" placeholder="http://server.com:8080">
-                    </div>
-                    <div class="input-group">
-                        <label>Username</label>
-                        <input type="text" id="username" value="${state.auth.username}" placeholder="Username">
-                    </div>
-                    <div class="input-group">
-                        <label>Password</label>
-                        <input type="password" id="password" value="${state.auth.password}" placeholder="Password">
-                    </div>
-                    <button class="btn" id="loginBtn" style="width:100%">🔐 ACCEDI</button>
-                </div>
-            `;
-
-            // Login handler
-            document.getElementById('loginBtn').onclick = async function() {
-                const server = document.getElementById('server').value.trim();
-                const username = document.getElementById('username').value.trim();
-                const password = document.getElementById('password').value;
-
-                if (!server || !username || !password) {
-                    state.error = 'Tutti i campi sono obbligatori';
-                    render();
-                    return;
-                }
-
-                state.loading = true;
-                state.error = null;
-                render();
-                
-                const btn = document.getElementById('loginBtn');
-                if (btn) btn.innerText = '⏳ Autenticazione...';
-
-                try {
-                    const url = `${server.replace(/\/$/, '')}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
-                    
-                    console.log('Login...');
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    
-                    console.log('Login response:', data);
-                    
-                    if (data.user_info && data.user_info.auth === 1) {
-                        state.auth = { serverUrl: server, username, password };
-                        state.user = data.user_info;
-                        localStorage.setItem('xtream_auth', JSON.stringify(state.auth));
-                        loadChannels();
-                    } else {
-                        state.error = 'Login fallito: ' + (data.user_info?.message || 'Errore sconosciuto');
-                    }
-                } catch (err) {
-                    console.error('Errore login:', err);
-                    state.error = 'Errore di connessione: ' + err.message;
-                } finally {
-                    state.loading = false;
-                    render();
-                }
             };
         }
 
+        // Init app
+        console.log('State:', state);
+        if (state.auth.username) {
+            loadChannels();
+        } else {
+            showLogin();
+        }
+
+        function showLogin() {
+            document.getElementById('app').innerHTML = `
+                <div class="center-vertical">
+                    <div class="login-box">
+                        <h1 style="text-align:center;margin-bottom:30px;font-size:28px;">📺 IPTV Smarters Xbox</h1>
+                        <form onsubmit="handleLogin(event)">
+                            <div class="input-group">
+                                <label>URL Server</label>
+                                <input type="text" id="server" value="${state.auth.serverUrl}" placeholder="http://server.com:8080" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Username</label>
+                                <input type="text" id="username" value="${state.auth.username}" placeholder="Username" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Password</label>
+                                <input type="password" id="password" value="${state.auth.password}" placeholder="Password" required>
+                            </div>
+                            <button type="submit" class="btn" style="width:100%">🔐 ACCEDI</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            console.log('Login view rendered');
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const server = document.getElementById('server').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!server || !username || !password) {
+                alert('Tutti i campi sono obbligatori!');
+                return;
+            }
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Autenticazione...';
+            btn.disabled = true;
+
+            try {
+                const url = `${server.replace(/\/$/, '')}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+                console.log('Login URL:', url);
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (data.user_info && data.user_info.auth === 1) {
+                    state.auth = { serverUrl: server, username, password };
+                    localStorage.setItem('auth', JSON.stringify(state.auth));
+                    console.log('Login riuscito!');
+                    loadChannels();
+                } else {
+                    alert('Login fallito: ' + (data.user_info?.message || 'Errore sconosciuto'));
+                }
+            } catch (err) {
+                console.error('Errore Login:', err);
+                alert('Errore di connessione: ' + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
         async function loadChannels() {
-            state.loading = true;
-            state.page = 'loading';
-            render();
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div style="text-align:center">
+                    <div class="spinner"></div>
+                    <p style="color:#aaa;font-size:18px;">Caricamento canali...</p>
+                </div>
+            `;
+            console.log('Loading channels...');
 
             try {
                 const { serverUrl, username, password } = state.auth;
-                
-                console.log('Caricamento canali...');
-                const url = `${serverUrl.replace(/\/$/, '')}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&action=get_live_streams`;
-                
+                const url = `${serverUrl}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&action=get_live_streams`;
+
+                console.log('Channels URL:', url);
                 const response = await fetch(url);
+                console.log('Channels response status:', response.status);
                 const data = await response.json();
-                
-                console.log('Canali ricevuti:', data.length);
+                console.log('Channels count:', data ? data.length : 0);
+
                 state.channels = data || [];
-                
-                // Carica categorie
-                const catUrl = `${serverUrl.replace(/\/$/, '')}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&action=get_live_categories`;
-                const catResponse = await fetch(catUrl);
-                const catData = await catResponse.json();
-                state.categories = catData || [];
-                
-                state.page = 'channels';
-                state.loading = false;
+                renderChannels();
             } catch (err) {
                 console.error('Errore caricamento canali:', err);
-                state.error = 'Errore: ' + err.message;
-                state.page = 'login';
-                state.loading = false;
+                app.innerHTML = `
+                    <div class="login-box">
+                        <div class="error-text">
+                            <h2>❌ Errore</h2>
+                            <p>${err.message}</p>
+                        </div>
+                        <button class="btn" onclick="showLogin()">Torna al Login</button>
+                    </div>
+                `;
             }
-            
-            render();
         }
 
         function renderChannels() {
             const app = document.getElementById('app');
+            const { username, serverUrl } = state.auth;
+
             app.innerHTML = `
-                <div style="padding:20px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                        <h1 style="font-size:32px;">📺 Canali Live</h1>
-                        <div>
-                            <button class="btn" onclick="location.reload()" style="padding:10px 20px">🔄 Aggiorna</button>
-                            <button class="btn" onclick="logout()" style="padding:10px 20px;background:#dc2626">🚪 Logout</button>
-                        </div>
-                    </div>
-                    
-                    <p style="margin-bottom:20px;color:#aaa;">
-                        ${state.channels.length} canali trovati
-                        ${state.auth.username ? ` (${state.auth.username})` : ''}
-                    </p>
-                    
-                    <div class="channel-grid">
-                        ${state.channels.slice(0, 30).map(ch => `
-                            <div class="channel-card" onclick="playChannel(${ch.stream_id}, '${ch.name.replace(/\'/g, "\\'")}')">
-                                ${ch.stream_icon ? `
-                                    <img src="${ch.stream_icon}" 
-                                        class="channel-icon" 
-                                        alt="${ch.name}"
-                                        onerror="this.style.display='none'">
-                                ` : ''}
-                                <h3 style="font-size:16px;margin-bottom:10px;">${ch.name}</h3>
-                                <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:#4ade80">
-                                    <span style="width:8px;height:8px;background:#4ade80;border-radius:50%"></span>
-                                    Live
-                                </div>
-                            </div>
-                        `).join('')}
+                <div class="nav-bar">
+                    <h2 style="font-size:24px;">📺 Canali Live</h2>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <span class="info-text">${state.channels.length} canali • ${username}</span>
+                        <button class="btn" onclick="location.reload()" style="padding:10px 15px">🔄</button>
+                        <button class="btn btn-red" onclick="logout()" style="padding:10px 15px">🚪</button>
                     </div>
                 </div>
+                <div class="channel-grid">
+                    ${state.channels.slice(0, 60).map(ch => `
+                        <div class="channel-card" ondblclick="playChannel(${ch.stream_id})" style="touch-action: manipulation;">
+                            ${ch.stream_icon ? `
+                                <img src="${ch.stream_icon}" 
+                                    class="channel-icon" 
+                                    alt="${ch.name}"
+                                    onerror="this.style.display='none'">
+                            ` : ''}
+                            <h3 style="font-size:14px;margin-bottom:10px;line-height:1.4;">${ch.name}</h3>
+                            <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:#4ade80;margin-top:12px">
+                                <span style="width:8px;height:8px;background:#4ade80;border-radius:50%"></span>
+                                <span style="font-size:14px">LIVE</span>
+                            </div>
+                            <div style="font-size:12px;color:#aaa;margin-top:8px">Doppio click per aprire</div>
+                        </div>
+                    `).join('')}
+                </div>
             `;
+            console.log('Channels rendered:', state.channels.length);
         }
 
-        function playChannel(streamId, name) {
+        function playChannel(streamId) {
             const { serverUrl, username, password } = state.auth;
-            const url = `${serverUrl.replace(/\/$/, '')}/live/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${streamId}.m3u8`;
+            const url = `${serverUrl}/live/${encodeURIComponent(username)}/${encodeURIComponent(password)}/${streamId}.m3u8`;
             
-            console.log('Riproduzione canale:', name, url);
+            console.log('Play channel:', url);
             window.open(url, '_blank');
         }
 
         function logout() {
-            localStorage.removeItem('xtream_auth');
-            state.user = null;
-            state.page = 'login';
-            state.channels = [];
-            state.categories = [];
-            render();
+            localStorage.removeItem('auth');
+            state.auth = null;
+            location.reload();
         }
-
-        // Avvio app quando DOM è pronto
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            console.log('App initialization complete');
-        } else {
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('DOM fully loaded');
-            });
-        }
-        
-        console.log('App state:', state);
     </script>
 </body>
 </html>
